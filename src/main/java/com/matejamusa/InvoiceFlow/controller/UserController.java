@@ -21,6 +21,7 @@ import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.Map;
 
+import static com.matejamusa.InvoiceFlow.dtomapper.UserDTOMapper.toUser;
 import static java.time.LocalDateTime.now;
 import static org.springframework.http.HttpStatus.OK;
 
@@ -84,7 +85,7 @@ public class UserController {
     }
 
     private UserPrincipal getUserPrincipal(UserDTO user) {
-        return new UserPrincipal(userService.getUser(user.getEmail()), roleService.getRoleByUserId(user.getId()).getPermission());
+        return new UserPrincipal(toUser(userService.getUserByEmail(user.getEmail())), roleService.getRoleByUserId(user.getId()).getPermission());
     }
 
     private ResponseEntity<HttpResponse> sendVerification(UserDTO user) {

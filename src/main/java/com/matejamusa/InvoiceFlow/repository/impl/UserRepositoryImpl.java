@@ -58,7 +58,7 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             jdbc.update(INSERT_USER_QUERY, parameters, holder);
             user.setId(requireNonNull(holder.getKey()).longValue());
             roleRepository.addRoleToUser(user.getId(), ROLE_USER.name());
-            String verificationUrl = getVerification(UUID.randomUUID().toString(), ACCOUNT.getType());
+            String verificationUrl = getVerificationUrl(UUID.randomUUID().toString(), ACCOUNT.getType());
             jdbc.update(INSERT_ACCOUNT_VERIFICATION_URL_QUERY, Map.of("userId",user.getId(), "url", verificationUrl));
 //            emailService.sendVerificationUrl(user.getFirstName(),user.getEmail(), verificationUrl, ACCOUNT);
             user.setEnabled(false);
@@ -102,7 +102,7 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
                 .addValue("password",encoder.encode(user.getPassword()));
     }
 
-    private String getVerification(String key, String type) {
+    private String getVerificationUrl(String key, String type) {
         return ServletUriComponentsBuilder.fromCurrentContextPath().path("/user/verify/" + type + "/" + key).toUriString();
     }
 
@@ -140,7 +140,8 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
         try {
             jdbc.update(DELETE_VERIFICATION_CODE_BY_USER_ID_QUERY, Map.of("id",user.getId()));
             jdbc.update(INSERT_VERIFICATION_CODE_QUERY, Map.of("userId",user.getId(), "code", verificationCode, "expirationDate", expirationDate));
-            sendSMS(snsClient, "From: InvoiceFlow \nVerification code\n"+ verificationCode, user.getPhone());
+//            sendSMS(snsClient, "From: InvoiceFlow \nVerification code\n"+ verificationCode, user.getPhone());
+            log.info("Verification code: {}", verificationCode);
         } catch (Exception exception) {
             log.error(exception.getMessage());
             throw new ApiException("An error occurred. Please try again.");
@@ -149,16 +150,28 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
 
     @Override
     public User verifyCode(String email, String code) {
+        if(isVerificationCodeExpired(code)) throw new ApiException("This code has expired, please log in again");
         try {
             User userByCode = jdbc.queryForObject(SELECT_USER_BY_USER_CODE_QUERY, Map.of("code", code), new UserRowMapper());
             User userByEmail = jdbc.queryForObject(SELECT_USER_BY_EMAIL_QUERY, Map.of("email", email), new UserRowMapper());
             if(userByCode.getEmail().equalsIgnoreCase(userByEmail.getEmail())) {
+                jdbc.update(DELETE_CODE_QUERY, Map.of("code", code));
                 return userByCode;
             } else {
                 throw new ApiException("Code is invalid. Please try again.");
             }
         } catch (EmptyResultDataAccessException e) {
             throw new ApiException("Could not find record");
+        } catch (Exception e) {
+            throw new ApiException("An error occurred. Please try again.");
+        }
+    }
+
+    private Boolean isVerificationCodeExpired(String code) {
+        try {
+            return jdbc.queryForObject(SELECT_CODE_EXPIRATION_QUERY, Map.of("code", code), Boolean.class);
+        } catch (EmptyResultDataAccessException e) {
+            throw new ApiException("This code is not valid, please log in again");
         } catch (Exception e) {
             throw new ApiException("An error occurred. Please try again.");
         }

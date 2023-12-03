@@ -21,6 +21,7 @@ public class User {
     private String firstName;
     @NotEmpty(message = "Last name cannot be empty")
     private String lastName;
+    @NotEmpty(message = "Email cannot be empty")
     @Email(message = "Invalid email. Please enter valid email address")
     private String email;
     @NotEmpty(message = "Password cannot be empty")

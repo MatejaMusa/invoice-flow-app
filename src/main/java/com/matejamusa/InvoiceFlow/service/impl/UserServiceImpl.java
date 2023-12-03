@@ -2,7 +2,9 @@ package com.matejamusa.InvoiceFlow.service.impl;
 
 import com.matejamusa.InvoiceFlow.dto.UserDTO;
 import com.matejamusa.InvoiceFlow.dtomapper.UserDTOMapper;
+import com.matejamusa.InvoiceFlow.model.Role;
 import com.matejamusa.InvoiceFlow.model.User;
+import com.matejamusa.InvoiceFlow.repository.RoleRepository;
 import com.matejamusa.InvoiceFlow.repository.UserRepository;
 import com.matejamusa.InvoiceFlow.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -14,13 +16,14 @@ import static com.matejamusa.InvoiceFlow.dtomapper.UserDTOMapper.fromUser;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository<User> userRepository;
+    private final RoleRepository<Role> roleRepository;
     @Override
     public UserDTO createUser(User user) {
-        return fromUser(userRepository.create(user));
+        return mapToUserDTO(userRepository.create(user));
     }
 
     public UserDTO getUserByEmail(String email) {
-        return fromUser(userRepository.getUserByEmail(email));
+        return mapToUserDTO(userRepository.getUserByEmail(email));
     }
 
     @Override
@@ -29,12 +32,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User getUser(String email) {
-        return userRepository.getUserByEmail(email);
+    public UserDTO verifyCode(String email, String code) {
+        return mapToUserDTO(userRepository.verifyCode(email, code));
     }
 
-    @Override
-    public UserDTO verifyCode(String email, String code) {
-        return fromUser(userRepository.verifyCode(email, code));
+    private UserDTO mapToUserDTO(User user) {
+        return fromUser(user, roleRepository.getRoleByUserId(user.getId()));
     }
+
 }
