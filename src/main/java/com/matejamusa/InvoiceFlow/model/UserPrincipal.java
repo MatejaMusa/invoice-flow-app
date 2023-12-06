@@ -1,5 +1,6 @@
 package com.matejamusa.InvoiceFlow.model;
 
+import com.matejamusa.InvoiceFlow.dto.UserDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -8,16 +9,17 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
+import static com.matejamusa.InvoiceFlow.dtomapper.UserDTOMapper.fromUser;
 import static java.util.Arrays.stream;
 
 @RequiredArgsConstructor
 public class UserPrincipal implements UserDetails {
 
     private final User user;
-    private final String permissions;
+    private final Role role;
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return stream(permissions.split(",".trim())).map(SimpleGrantedAuthority::new).collect(Collectors.toList());
+        return stream(this.role.getPermission().split(",".trim())).map(SimpleGrantedAuthority::new).collect(Collectors.toList());
     }
 
     @Override
@@ -54,7 +56,11 @@ public class UserPrincipal implements UserDetails {
     public String toString() {
         return "UserPrincipal{" +
                 "user=" + user +
-                ", permissions='" + permissions + '\'' +
+                ", role=" + role +
                 '}';
+    }
+
+    public UserDTO getUser() {
+        return fromUser(this.user, role);
     }
 }

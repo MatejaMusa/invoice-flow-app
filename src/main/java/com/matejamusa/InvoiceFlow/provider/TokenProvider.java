@@ -7,7 +7,9 @@ import com.auth0.jwt.exceptions.InvalidClaimException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.matejamusa.InvoiceFlow.model.UserPrincipal;
+import com.matejamusa.InvoiceFlow.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,14 +28,16 @@ import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 
 @Component
+@RequiredArgsConstructor
 public class TokenProvider {
     private static final String INVOICE_FLOW_DOO = "INVOICE_FLOW_DOO";
     private static final String CUSTOMER_MANAGEMENT_SERVICE = "CUSTOMER_MANAGEMENT_SERVICE";
     private static final String AUTHORITIES = "authorities";
-    private static final long ACCESS_TOKEN_EXPIRATION_TIME = 1_800_000;
+    private static final long ACCESS_TOKEN_EXPIRATION_TIME = 100;
     private static final long REFRESH_TOKEN_EXPIRATION_TIME = 432_000_000;
     @Value("${jwt.secret}")
     private String secret;
+    private final UserService userService;
 
     public String createAccessToken(UserPrincipal userPrincipal) {
         String[] claims = getClaimsFromUser(userPrincipal);
@@ -71,7 +75,7 @@ public class TokenProvider {
     }
 
     public Authentication getAuthentication(String email, List<GrantedAuthority> authorities, HttpServletRequest request) {
-        UsernamePasswordAuthenticationToken userPasswordAuthToken = new UsernamePasswordAuthenticationToken(email, null, authorities);
+        UsernamePasswordAuthenticationToken userPasswordAuthToken = new UsernamePasswordAuthenticationToken(userService.getUserByEmail(email), null, authorities);
         userPasswordAuthToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         return userPasswordAuthToken;
     }
