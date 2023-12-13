@@ -27,6 +27,7 @@ import java.util.Map;
 import static com.matejamusa.InvoiceFlow.dtomapper.UserDTOMapper.toUser;
 import static com.matejamusa.InvoiceFlow.utils.ExceptionUtils.processError;
 import static java.time.LocalDateTime.now;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.security.authentication.UsernamePasswordAuthenticationToken.unauthenticated;
 
@@ -40,12 +41,11 @@ public class UserController {
     private final TokenProvider tokenProvider;
     private final HttpServletRequest request;
     private final HttpServletResponse response;
+    private static final String TOKEN_PREFIX = "Bearer ";
 
     @PostMapping("/login")
     public ResponseEntity<HttpResponse> login(@RequestBody @Valid LoginForm loginForm) {
         Authentication authentication = authenticate(loginForm.getEmail(), loginForm.getPassword());
-        System.out.println("KITA " + authentication);
-        System.out.println("KITA " + authentication.getPrincipal());
         UserDTO user = getAuthenticatedUser(authentication);
         return user.isUsingMfa() ? sendVerification(user) : sendResponse(user);
     }
@@ -113,6 +113,40 @@ public class UserController {
                         .status(OK)
                         .statusCode(OK.value())
                         .build());
+    }
+
+    @GetMapping("/refresh/token")
+    public ResponseEntity<HttpResponse> refreshToken(HttpServletRequest request) {
+        if(isHeaderAndTokenValid(request)) {
+            String token = request.getHeader(AUTHORIZATION).substring(TOKEN_PREFIX.length());
+            UserDTO user = userService.getUserByEmail(tokenProvider.getSubject(token,request));
+            return ResponseEntity.ok().body(
+                    HttpResponse.builder()
+                            .timeStamp(now().toString())
+                            .data(Map.of("user", user, "access_token",tokenProvider.createAccessToken(getUserPrincipal(user)),
+                                    "refresh_token", token))
+                            .message("Token refreshed")
+                            .status(OK)
+                            .statusCode(OK.value())
+                            .build());
+        }
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .reason("Refresh Token missing or invalid")
+                        .developerMessage("Refresh Token missing or invalid")
+                        .status(BAD_REQUEST)
+                        .statusCode(BAD_REQUEST.value())
+                        .build());
+    }
+
+    private boolean isHeaderAndTokenValid(HttpServletRequest request) {
+        return request.getHeader(AUTHORIZATION) != null
+                && request.getHeader(AUTHORIZATION).startsWith(TOKEN_PREFIX)
+                && tokenProvider.isTokenValid(
+                        tokenProvider.getSubject(request.getHeader(AUTHORIZATION).substring(TOKEN_PREFIX.length()),request),
+                        request.getHeader(AUTHORIZATION).substring(TOKEN_PREFIX.length())
+                );
     }
 
     @PostMapping("/resetpassword/{key}/{password}/{confirmPassword}")
