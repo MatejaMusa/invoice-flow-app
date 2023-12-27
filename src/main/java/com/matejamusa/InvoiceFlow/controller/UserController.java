@@ -221,7 +221,7 @@ public class UserController {
             Authentication authentication = authenticationManager.authenticate(unauthenticated(email, password));
             return authentication;
         } catch (Exception e) {
-            processError(request, response, e);
+//            processError(request, response, e);
             throw new ApiException(e.getMessage());
         }
 
