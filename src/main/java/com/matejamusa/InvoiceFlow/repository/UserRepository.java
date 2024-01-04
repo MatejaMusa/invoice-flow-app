@@ -1,6 +1,7 @@
 package com.matejamusa.InvoiceFlow.repository;
 
 import com.matejamusa.InvoiceFlow.dto.UserDTO;
+import com.matejamusa.InvoiceFlow.form.UpdateForm;
 import com.matejamusa.InvoiceFlow.model.User;
 
 import java.util.Collection;
@@ -25,4 +26,6 @@ public interface UserRepository <T extends User>{
     void renewPassword(String key, String password, String confirmPassword);
 
     T verifyAccountKey(String key);
+
+    T updateUserDetails(UpdateForm user);
 }

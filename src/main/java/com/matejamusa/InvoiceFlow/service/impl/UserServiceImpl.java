@@ -2,6 +2,7 @@ package com.matejamusa.InvoiceFlow.service.impl;
 
 import com.matejamusa.InvoiceFlow.dto.UserDTO;
 import com.matejamusa.InvoiceFlow.dtomapper.UserDTOMapper;
+import com.matejamusa.InvoiceFlow.form.UpdateForm;
 import com.matejamusa.InvoiceFlow.model.Role;
 import com.matejamusa.InvoiceFlow.model.User;
 import com.matejamusa.InvoiceFlow.repository.RoleRepository;
@@ -54,6 +55,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDTO verifyAccountKey(String key) {
         return mapToUserDTO(userRepository.verifyAccountKey(key));
+    }
+
+    @Override
+    public UserDTO updatedUserDetails(UpdateForm user) {
+        return mapToUserDTO(userRepository.updateUserDetails(user));
     }
 
     private UserDTO mapToUserDTO(User user) {

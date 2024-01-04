@@ -1,6 +1,7 @@
 package com.matejamusa.InvoiceFlow.service;
 
 import com.matejamusa.InvoiceFlow.dto.UserDTO;
+import com.matejamusa.InvoiceFlow.form.UpdateForm;
 import com.matejamusa.InvoiceFlow.model.User;
 
 public interface UserService {
@@ -19,4 +20,6 @@ public interface UserService {
     void renewPassword(String key, String password, String confirmPassword);
 
     UserDTO verifyAccountKey(String key);
+
+    UserDTO updatedUserDetails(UpdateForm user);
 }

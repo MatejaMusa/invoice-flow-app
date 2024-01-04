@@ -2,6 +2,7 @@ package com.matejamusa.InvoiceFlow.controller;
 
 import com.matejamusa.InvoiceFlow.exception.ApiException;
 import com.matejamusa.InvoiceFlow.form.LoginForm;
+import com.matejamusa.InvoiceFlow.form.UpdateForm;
 import com.matejamusa.InvoiceFlow.model.HttpResponse;
 import com.matejamusa.InvoiceFlow.model.User;
 import com.matejamusa.InvoiceFlow.dto.UserDTO;
@@ -26,6 +27,8 @@ import java.util.Map;
 
 import static com.matejamusa.InvoiceFlow.dtomapper.UserDTOMapper.toUser;
 import static com.matejamusa.InvoiceFlow.utils.ExceptionUtils.processError;
+import static com.matejamusa.InvoiceFlow.utils.UserUtils.getAuthenticatedUser;
+import static com.matejamusa.InvoiceFlow.utils.UserUtils.getLoggedInUser;
 import static java.time.LocalDateTime.now;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.*;
@@ -46,7 +49,7 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<HttpResponse> login(@RequestBody @Valid LoginForm loginForm) {
         Authentication authentication = authenticate(loginForm.getEmail(), loginForm.getPassword());
-        UserDTO user = getAuthenticatedUser(authentication);
+        UserDTO user = getLoggedInUser(authentication);
         return user.isUsingMfa() ? sendVerification(user) : sendResponse(user);
     }
 
@@ -65,12 +68,24 @@ public class UserController {
 
     @GetMapping("/profile")
     public ResponseEntity<HttpResponse> profile(Authentication authentication) {
-        UserDTO user = userService.getUserByEmail(authentication.getName());
+        UserDTO user = userService.getUserByEmail(getAuthenticatedUser(authentication).getEmail());
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .data(Map.of("user", user))
                         .message("Profile Retrieved")
+                        .status(OK)
+                        .statusCode(OK.value())
+                        .build());
+    }
+    @GetMapping("/update")
+    public ResponseEntity<HttpResponse> updateUser(@RequestBody @Valid UpdateForm user) {
+        UserDTO updatedUser = userService.updatedUserDetails(user);
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .data(Map.of("user", updatedUser))
+                        .message("User updated")
                         .status(OK)
                         .statusCode(OK.value())
                         .build());
@@ -225,9 +240,5 @@ public class UserController {
             throw new ApiException(e.getMessage());
         }
 
-    }
-
-    private UserDTO getAuthenticatedUser(Authentication authentication) {
-        return ((UserPrincipal) authentication.getPrincipal()).getUser();
     }
 }

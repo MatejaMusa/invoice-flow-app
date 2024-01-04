@@ -3,6 +3,7 @@ package com.matejamusa.InvoiceFlow.repository.impl;
 import com.matejamusa.InvoiceFlow.dto.UserDTO;
 import com.matejamusa.InvoiceFlow.enumeration.VerificationType;
 import com.matejamusa.InvoiceFlow.exception.ApiException;
+import com.matejamusa.InvoiceFlow.form.UpdateForm;
 import com.matejamusa.InvoiceFlow.model.Role;
 import com.matejamusa.InvoiceFlow.model.User;
 import com.matejamusa.InvoiceFlow.model.UserPrincipal;
@@ -103,6 +104,18 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
                 .addValue("lastName", user.getLastName())
                 .addValue("email", user.getEmail())
                 .addValue("password",encoder.encode(user.getPassword()));
+    }
+
+    private SqlParameterSource getUserDetailsSqlParameterSource(UpdateForm user) {
+        return new MapSqlParameterSource()
+                .addValue("id", user.getId())
+                .addValue("firstName", user.getFirstName())
+                .addValue("lastName", user.getLastName())
+                .addValue("email", user.getEmail())
+                .addValue("phone", user.getPhone())
+                .addValue("address", user.getAddress())
+                .addValue("title", user.getTitle())
+                .addValue("bio", user.getBio());
     }
 
     private String getVerificationUrl(String key, String type) {
@@ -224,6 +237,17 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             throw new ApiException("This link is not valid.");
         } catch (Exception e) {
             throw new ApiException("An error occurred. Please try again.");
+        }
+    }
+
+    @Override
+    public User updateUserDetails(UpdateForm user) {
+        try {
+            jdbc.update(UPDATE_USER_DETAILS_QUERY, getUserDetailsSqlParameterSource(user));
+            return get(user.getId());
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new ApiException("This link is not valid. Please reset your password again");
         }
     }
 
