@@ -62,6 +62,11 @@ public class UserServiceImpl implements UserService {
         return mapToUserDTO(userRepository.updateUserDetails(user));
     }
 
+    @Override
+    public UserDTO getUserById(Long userId) {
+        return mapToUserDTO(userRepository.get(userId));
+    }
+
     private UserDTO mapToUserDTO(User user) {
         return fromUser(user, roleRepository.getRoleByUserId(user.getId()));
     }
