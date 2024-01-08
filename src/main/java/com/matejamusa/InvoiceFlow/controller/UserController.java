@@ -3,6 +3,7 @@ package com.matejamusa.InvoiceFlow.controller;
 import com.matejamusa.InvoiceFlow.exception.ApiException;
 import com.matejamusa.InvoiceFlow.form.LoginForm;
 import com.matejamusa.InvoiceFlow.form.UpdateForm;
+import com.matejamusa.InvoiceFlow.form.UpdatePasswordForm;
 import com.matejamusa.InvoiceFlow.model.HttpResponse;
 import com.matejamusa.InvoiceFlow.model.User;
 import com.matejamusa.InvoiceFlow.dto.UserDTO;
@@ -173,6 +174,19 @@ public class UserController {
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .message("Password reset successfully.")
+                        .status(OK)
+                        .statusCode(OK.value())
+                        .build());
+    }
+
+    @PatchMapping("/update/password")
+    public ResponseEntity<HttpResponse> updatePassword(Authentication authentication, @RequestBody @Valid UpdatePasswordForm form) {
+        UserDTO userDTO = getAuthenticatedUser(authentication);
+        userService.updatePassword(userDTO.getId(), form.getCurrentPassword(), form.getNewPassword(), form.getConfirmNewPassword());
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .message("Password updated successfully")
                         .status(OK)
                         .statusCode(OK.value())
                         .build());
