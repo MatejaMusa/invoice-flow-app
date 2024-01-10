@@ -2,6 +2,7 @@ package com.matejamusa.InvoiceFlow.controller;
 
 import com.matejamusa.InvoiceFlow.exception.ApiException;
 import com.matejamusa.InvoiceFlow.form.LoginForm;
+import com.matejamusa.InvoiceFlow.form.SettingsForm;
 import com.matejamusa.InvoiceFlow.form.UpdateForm;
 import com.matejamusa.InvoiceFlow.form.UpdatePasswordForm;
 import com.matejamusa.InvoiceFlow.model.HttpResponse;
@@ -205,6 +206,22 @@ public class UserController {
                         .statusCode(OK.value())
                         .build());
     }
+
+    @PatchMapping("/update/settings")
+    public ResponseEntity<HttpResponse> updateAccountSettings(Authentication authentication, @RequestBody @Valid SettingsForm form) {
+        UserDTO userDTO = getAuthenticatedUser(authentication);
+        userService.updateAccountSettings(userDTO.getId(), form.getEnabled(), form.getNotLocked());
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .data(Map.of("user", userService.getUserById(userDTO.getId()), "roles", roleService.getRoles()))
+                        .timeStamp(now().toString())
+                        .message("Account settings updated successfully")
+                        .status(OK)
+                        .statusCode(OK.value())
+                        .build());
+    }
+
+
 
     @GetMapping("/verify/account/{key}")
     public ResponseEntity<HttpResponse> verifyAccount(@PathVariable("key") String key) {
