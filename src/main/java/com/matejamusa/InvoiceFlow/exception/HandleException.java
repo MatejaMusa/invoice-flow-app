@@ -91,9 +91,9 @@ public class HandleException extends ResponseEntityExceptionHandler implements E
                         .timeStamp(now().toString())
                         .reason(ex.getMessage())
                         .developerMessage(ex.getMessage())
-                        .status(FORBIDDEN)
-                        .statusCode(FORBIDDEN.value())
-                        .build(), FORBIDDEN);
+                        .status(BAD_REQUEST)
+                        .statusCode(BAD_REQUEST.value())
+                        .build(), BAD_REQUEST);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
