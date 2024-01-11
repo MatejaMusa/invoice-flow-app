@@ -39,6 +39,7 @@ import static com.matejamusa.InvoiceFlow.query.UserQuery.*;
 import static com.matejamusa.InvoiceFlow.utils.SMSUtils.sendSMS;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.time.DateFormatUtils.format;
 import static org.apache.commons.lang3.time.DateUtils.addDays;
 
@@ -284,6 +285,22 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ApiException("An error occurred. Please try again.");
+        }
+    }
+
+    @Override
+    public User toggleMfa(String email) {
+        User user = getUserByEmail(email);
+        if(isBlank(user.getPhone())) {
+            throw new ApiException("You need phone number to change Multi-Factor Authentication.");
+        }
+        user.setUsingMfa(!user.isUsingMfa());
+        try {
+            jdbc.update(TOGGLE_USER_MFA_QUERY, Map.of("email", email, "isUsingMfa", user.isUsingMfa()));
+            return user;
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new ApiException("Unable to update Multi-Factor Authentication.");
         }
     }
 
