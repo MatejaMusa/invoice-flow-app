@@ -3,6 +3,7 @@ package com.matejamusa.InvoiceFlow.service;
 import com.matejamusa.InvoiceFlow.dto.UserDTO;
 import com.matejamusa.InvoiceFlow.form.UpdateForm;
 import com.matejamusa.InvoiceFlow.model.User;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface UserService {
     UserDTO createUser(User user);
@@ -32,4 +33,6 @@ public interface UserService {
     void updateAccountSettings(Long userId, Boolean enabled, Boolean notLocked);
 
     UserDTO toggleMfa(String email);
+
+    void updateImage(UserDTO user, MultipartFile image);
 }

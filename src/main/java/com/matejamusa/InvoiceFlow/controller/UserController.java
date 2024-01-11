@@ -20,11 +20,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import jakarta.validation.Valid;
 
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 
 import static com.matejamusa.InvoiceFlow.dtomapper.UserDTOMapper.toUser;
@@ -34,6 +37,7 @@ import static com.matejamusa.InvoiceFlow.utils.UserUtils.getLoggedInUser;
 import static java.time.LocalDateTime.now;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.MediaType.IMAGE_PNG_VALUE;
 import static org.springframework.security.authentication.UsernamePasswordAuthenticationToken.unauthenticated;
 
 @RestController
@@ -226,12 +230,31 @@ public class UserController {
         UserDTO userDTO = userService.toggleMfa(getAuthenticatedUser(authentication).getEmail());
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
-                        .data(Map.of("user", userDTO))
+                        .data(Map.of("user", userDTO, "roles", roleService.getRoles()))
                         .timeStamp(now().toString())
                         .message("Multi-Factor Authentication updated")
                         .status(OK)
                         .statusCode(OK.value())
                         .build());
+    }
+
+    @PatchMapping("/update/image")
+    public ResponseEntity<HttpResponse> updateProfileImage(Authentication authentication, @RequestParam("image") MultipartFile image) {
+        UserDTO user = getAuthenticatedUser(authentication);
+        userService.updateImage(user,image);
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .data(Map.of("user", userService.getUserById(user.getId()), "roles", roleService.getRoles()))
+                        .timeStamp(now().toString())
+                        .message("Profile image updated")
+                        .status(OK)
+                        .statusCode(OK.value())
+                        .build());
+    }
+
+    @GetMapping(value = "/image/{fileName}", produces = IMAGE_PNG_VALUE)
+    public byte[] getProfileImage(@PathVariable("fileName") String fileName) throws Exception{
+        return Files.readAllBytes(Paths.get(System.getProperty("user.home") + "/Downloads/images/" + fileName));
     }
 
     @GetMapping("/verify/account/{key}")

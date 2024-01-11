@@ -24,9 +24,14 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Repository;
 import com.matejamusa.InvoiceFlow.repository.UserRepository;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import software.amazon.awssdk.services.sns.SnsClient;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
@@ -37,6 +42,7 @@ import static com.matejamusa.InvoiceFlow.enumeration.VerificationType.ACCOUNT;
 import static com.matejamusa.InvoiceFlow.enumeration.VerificationType.PASSWORD;
 import static com.matejamusa.InvoiceFlow.query.UserQuery.*;
 import static com.matejamusa.InvoiceFlow.utils.SMSUtils.sendSMS;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -302,6 +308,38 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             log.error(e.getMessage());
             throw new ApiException("Unable to update Multi-Factor Authentication.");
         }
+    }
+
+    @Override
+    public void updateImage(UserDTO user, MultipartFile image) {
+        String userImageUrl = setUserImageUrl(user.getEmail());
+        user.setImageUrl(userImageUrl);
+        saveImage(user.getEmail(), image);
+        jdbc.update(UPDATE_USER_IMAGE_QUERY, Map.of("imageUrl", userImageUrl, "id", user.getId()));
+    }
+
+    private String setUserImageUrl(String email) {
+        return ServletUriComponentsBuilder.fromCurrentContextPath().path("/user/image/" + email + ".png").toUriString();
+    }
+
+    private void saveImage(String email, MultipartFile image) {
+        Path fileStorageLocation = Paths.get(System.getProperty("user.home") + "/Downloads/images/").toAbsolutePath().normalize();
+        if(!Files.exists(fileStorageLocation)) {
+            try {
+                Files.createDirectories(fileStorageLocation);
+            } catch (Exception exception) {
+                log.error(exception.getMessage());
+                throw new ApiException("Unable to create directories to save images");
+            }
+            log.info("Create directories: {}", fileStorageLocation);
+        }
+        try {
+            Files.copy(image.getInputStream(), fileStorageLocation.resolve(email + ".png"), REPLACE_EXISTING);
+        } catch (IOException e) {
+            log.error(e.getMessage());
+            throw new ApiException(e.getMessage());
+        }
+        log.info("Files saved in: {} folder", fileStorageLocation);
     }
 
     private Boolean isLinkExpired(String key, VerificationType password) {
