@@ -1,5 +1,7 @@
 package com.matejamusa.InvoiceFlow.controller;
 
+import com.matejamusa.InvoiceFlow.enumeration.EventType;
+import com.matejamusa.InvoiceFlow.event.NewUserEvent;
 import com.matejamusa.InvoiceFlow.exception.ApiException;
 import com.matejamusa.InvoiceFlow.form.LoginForm;
 import com.matejamusa.InvoiceFlow.form.SettingsForm;
@@ -15,6 +17,7 @@ import com.matejamusa.InvoiceFlow.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -44,18 +47,18 @@ import static org.springframework.security.authentication.UsernamePasswordAuthen
 @RequestMapping(path="/user")
 @RequiredArgsConstructor
 public class UserController {
+    private static final String TOKEN_PREFIX = "Bearer ";
     private final UserService userService;
     private final RoleService roleService;
     private final AuthenticationManager authenticationManager;
     private final TokenProvider tokenProvider;
     private final HttpServletRequest request;
     private final HttpServletResponse response;
-    private static final String TOKEN_PREFIX = "Bearer ";
+    private final ApplicationEventPublisher publisher;
 
     @PostMapping("/login")
     public ResponseEntity<HttpResponse> login(@RequestBody @Valid LoginForm loginForm) {
-        Authentication authentication = authenticate(loginForm.getEmail(), loginForm.getPassword());
-        UserDTO user = getLoggedInUser(authentication);
+        UserDTO user = authenticate(loginForm.getEmail(), loginForm.getPassword());
         return user.isUsingMfa() ? sendVerification(user) : sendResponse(user);
     }
 
@@ -310,12 +313,20 @@ public class UserController {
                         .statusCode(OK.value())
                         .build());
     }
-    private Authentication authenticate(String email, String password) {
+    private UserDTO authenticate(String email, String password) {
         try {
+            if(userService.getUserByEmail(email) != null) {
+                publisher.publishEvent(new NewUserEvent(email, EventType.LOGIN_ATTEMPT));
+            }
             Authentication authentication = authenticationManager.authenticate(unauthenticated(email, password));
-            return authentication;
+            UserDTO loggedInUser = getLoggedInUser(authentication);
+            if(!loggedInUser.isUsingMfa()) {
+                publisher.publishEvent(new NewUserEvent(email, EventType.LOGIN_ATTEMPT_SUCCESS));
+            }
+            return loggedInUser;
         } catch (Exception e) {
-//            processError(request, response, e);
+            publisher.publishEvent(new NewUserEvent(email, EventType.LOGIN_ATTEMPT_FAILURE));
+            processError(request, response, e);
             throw new ApiException(e.getMessage());
         }
 
