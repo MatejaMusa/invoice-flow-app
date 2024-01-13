@@ -19,6 +19,8 @@ public class RequestUtils {
     public static String getDevice(HttpServletRequest request) {
         UserAgentAnalyzer userAgentAnalyzer = UserAgentAnalyzer.newBuilder().hideMatcherLoadStats().withCache(1000).build();
         UserAgent agent = userAgentAnalyzer.parse(request.getHeader("user-agent"));
-        return agent.getValue(UserAgent.OPERATING_SYSTEM_NAME) + " - " + agent.getValue(UserAgent.AGENT_NAME) + " - " + agent.getValue(UserAgent.DEVICE_NAME);
+//        return agent.getValue(UserAgent.OPERATING_SYSTEM_NAME) + " - " + agent.getValue(UserAgent.AGENT_NAME) + " - " + agent.getValue(UserAgent.DEVICE_NAME);
+        return agent.getValue(UserAgent.AGENT_NAME) + " - " + agent.getValue(UserAgent.DEVICE_NAME);
+
     }
 }
