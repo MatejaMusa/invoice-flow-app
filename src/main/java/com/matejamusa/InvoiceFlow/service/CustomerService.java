@@ -3,6 +3,7 @@ package com.matejamusa.InvoiceFlow.service;
 import com.matejamusa.InvoiceFlow.dto.UserDTO;
 import com.matejamusa.InvoiceFlow.model.Customer;
 import com.matejamusa.InvoiceFlow.model.Invoice;
+import com.matejamusa.InvoiceFlow.model.Stats;
 import org.springframework.data.domain.Page;
 
 public interface CustomerService {
@@ -20,4 +21,6 @@ public interface CustomerService {
     void addInvoiceToCustomer(Long id, Invoice invoice);
 
     Invoice getInvoice(Long id);
+
+    Stats getStats();
 }

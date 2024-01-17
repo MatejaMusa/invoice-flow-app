@@ -2,8 +2,10 @@ package com.matejamusa.InvoiceFlow.service.impl;
 
 import com.matejamusa.InvoiceFlow.model.Customer;
 import com.matejamusa.InvoiceFlow.model.Invoice;
+import com.matejamusa.InvoiceFlow.model.Stats;
 import com.matejamusa.InvoiceFlow.repository.CustomerRepository;
 import com.matejamusa.InvoiceFlow.repository.InvoiceRepository;
+import com.matejamusa.InvoiceFlow.rowmapper.StatsRowMapper;
 import com.matejamusa.InvoiceFlow.service.CustomerService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -11,9 +13,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.Map;
+
+import static com.matejamusa.InvoiceFlow.query.CustomerQuery.STATS_QUERY;
 
 @Service
 @Transactional
@@ -22,6 +28,7 @@ import java.util.Date;
 public class CustomerServiceImpl implements CustomerService {
     private final CustomerRepository customerRepository;
     private final InvoiceRepository invoiceRepository;
+    private final NamedParameterJdbcTemplate jdbc;
 
     @Override
     public Customer createCustomer(Customer customer) {
@@ -76,5 +83,10 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public Invoice getInvoice(Long id) {
         return invoiceRepository.findById(id).get();
+    }
+
+    @Override
+    public Stats getStats() {
+        return jdbc.queryForObject(STATS_QUERY, Map.of(), new StatsRowMapper());
     }
 }

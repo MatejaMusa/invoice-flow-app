@@ -4,10 +4,8 @@ import com.matejamusa.InvoiceFlow.dto.UserDTO;
 import com.matejamusa.InvoiceFlow.model.Customer;
 import com.matejamusa.InvoiceFlow.model.HttpResponse;
 import com.matejamusa.InvoiceFlow.model.Invoice;
-import com.matejamusa.InvoiceFlow.model.User;
 import com.matejamusa.InvoiceFlow.service.CustomerService;
 import com.matejamusa.InvoiceFlow.service.UserService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +31,8 @@ public class CustomerController {
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .data(Map.of("user", userService.getUserByEmail(user.getEmail()),
-                                "customers", customerService.getCustomers(page.orElse(0), size.orElse(10))))
+                                "page", customerService.getCustomers(page.orElse(0), size.orElse(10)),
+                                "stats", customerService.getStats()))
                         .message("Customers retrieved")
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
@@ -72,7 +71,7 @@ public class CustomerController {
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .data(Map.of("user", userService.getUserByEmail(user.getEmail()),
-                                "customers", customerService.searchCustomer(name.orElse(""), page.orElse(0), size.orElse(10))))
+                                "page", customerService.searchCustomer(name.orElse(""), page.orElse(0), size.orElse(10))))
                         .message("Customers retrieved")
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
