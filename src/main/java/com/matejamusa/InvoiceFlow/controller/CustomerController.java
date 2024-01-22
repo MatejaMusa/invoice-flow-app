@@ -4,15 +4,21 @@ import com.matejamusa.InvoiceFlow.dto.UserDTO;
 import com.matejamusa.InvoiceFlow.model.Customer;
 import com.matejamusa.InvoiceFlow.model.HttpResponse;
 import com.matejamusa.InvoiceFlow.model.Invoice;
+import com.matejamusa.InvoiceFlow.report.CustomerReport;
 import com.matejamusa.InvoiceFlow.service.CustomerService;
 import com.matejamusa.InvoiceFlow.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -58,7 +64,7 @@ public class CustomerController {
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .data(Map.of("user", userService.getUserByEmail(user.getEmail()),
-                                "customers", customerService.getCustomer(id)))
+                                "customer", customerService.getCustomer(id)))
                         .message("Customer retrieved")
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
@@ -84,7 +90,7 @@ public class CustomerController {
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .data(Map.of("user", userService.getUserByEmail(user.getEmail()),
-                                "customers", customerService.updateCustomer(customer)))
+                                "customer", customerService.updateCustomer(customer)))
                         .message("Customer updated")
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
@@ -104,7 +110,7 @@ public class CustomerController {
                         .build());
     }
 
-    @PostMapping("/invoice/new")
+    @GetMapping("/invoice/new")
     public ResponseEntity<HttpResponse> newInvoice(@AuthenticationPrincipal UserDTO user) {
         return ResponseEntity.ok(
                 HttpResponse.builder()
@@ -123,8 +129,8 @@ public class CustomerController {
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .data(Map.of("user", userService.getUserByEmail(user.getEmail()),
-                                "invoices", customerService.getInvoices(page.orElse(0), size.orElse(10))))
-                        .message("Customers retrieved")
+                                "page", customerService.getInvoices(page.orElse(0), size.orElse(10))))
+                        .message("invoices retrieved")
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
                         .build());
@@ -132,11 +138,13 @@ public class CustomerController {
 
     @GetMapping("/invoice/get/{id}")
     public ResponseEntity<HttpResponse> getInvoice(@AuthenticationPrincipal UserDTO user, @PathVariable("id") Long id) {
+        Invoice invoice = customerService.getInvoice(id);
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .data(Map.of("user", userService.getUserByEmail(user.getEmail()),
-                                "invoice", customerService.getInvoice(id)))
+                                "invoice", invoice,
+                                "customer", invoice.getCustomer()))
                         .message("Invoice retrieved")
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
@@ -151,9 +159,23 @@ public class CustomerController {
                         .timeStamp(now().toString())
                         .data(Map.of("user", userService.getUserByEmail(user.getEmail()),
                                 "customers", customerService.getCustomers()))
-                        .message("Customers retrieved")
+                        .message(String.format("Invoice added to customer with ID: %s", id))
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
                         .build());
+    }
+
+    @GetMapping("/download/report")
+    public ResponseEntity<Resource> downloadReport() {
+        List<Customer> customers = new ArrayList<>();
+        customerService.getCustomers().iterator().forEachRemaining(customers::add);
+        CustomerReport report = new CustomerReport(customers);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("File-Name", "customer-report.xlsx");
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment;File-Name=customer-report.xlsx");
+
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
+                .headers(headers)
+                .body(report.export());
     }
 }

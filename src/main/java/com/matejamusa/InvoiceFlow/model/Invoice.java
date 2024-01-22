@@ -20,7 +20,7 @@ public class Invoice {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String invoiceNumber;
-    private String service;
+    private String services;
     private Date date;
     private String status;
     private double total;
