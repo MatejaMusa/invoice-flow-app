@@ -71,7 +71,7 @@ public class UserController {
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .data(Map.of("user", userDTO))
-                        .message("User created")
+                        .message(String.format("Account created for user %s", user.getFirstName()))
                         .status(HttpStatus.CREATED)
                         .statusCode(HttpStatus.CREATED.value())
                         .build());
@@ -125,6 +125,16 @@ public class UserController {
                         .data(Map.of("user", user, "access_token",tokenProvider.createAccessToken(getUserPrincipal(user)),
                                 "refresh_token", tokenProvider.createRefreshToken(getUserPrincipal(user))))
                         .message("Login Success")
+                        .status(OK)
+                        .statusCode(OK.value())
+                        .build());
+    }
+    @GetMapping("/verify/account/{key}")
+    public ResponseEntity<HttpResponse> verifyAccount(@PathVariable("key") String key) {
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .message(userService.verifyAccountKey(key).isEnabled() ? "Account already verified" : "Account Verified")
                         .status(OK)
                         .statusCode(OK.value())
                         .build());
@@ -268,17 +278,6 @@ public class UserController {
     @GetMapping(value = "/image/{fileName}", produces = IMAGE_PNG_VALUE)
     public byte[] getProfileImage(@PathVariable("fileName") String fileName) throws Exception{
         return Files.readAllBytes(Paths.get(System.getProperty("user.home") + "/Downloads/images/" + fileName));
-    }
-
-    @GetMapping("/verify/account/{key}")
-    public ResponseEntity<HttpResponse> verifyAccount(@PathVariable("key") String key) {
-        return ResponseEntity.ok().body(
-                HttpResponse.builder()
-                        .timeStamp(now().toString())
-                        .message(userService.verifyAccountKey(key).isEnabled() ? "Account already verified" : "Account Verified")
-                        .status(OK)
-                        .statusCode(OK.value())
-                        .build());
     }
 
     @RequestMapping("/error")
