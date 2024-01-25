@@ -3,10 +3,7 @@ package com.matejamusa.InvoiceFlow.controller;
 import com.matejamusa.InvoiceFlow.enumeration.EventType;
 import com.matejamusa.InvoiceFlow.event.NewUserEvent;
 import com.matejamusa.InvoiceFlow.exception.ApiException;
-import com.matejamusa.InvoiceFlow.form.LoginForm;
-import com.matejamusa.InvoiceFlow.form.SettingsForm;
-import com.matejamusa.InvoiceFlow.form.UpdateForm;
-import com.matejamusa.InvoiceFlow.form.UpdatePasswordForm;
+import com.matejamusa.InvoiceFlow.form.*;
 import com.matejamusa.InvoiceFlow.model.HttpResponse;
 import com.matejamusa.InvoiceFlow.model.User;
 import com.matejamusa.InvoiceFlow.dto.UserDTO;
@@ -187,11 +184,9 @@ public class UserController {
                 );
     }
 
-    @PostMapping("/resetpassword/{key}/{password}/{confirmPassword}")
-    public ResponseEntity<HttpResponse> resetPasswordWithKey(@PathVariable("key") String key,
-                                                         @PathVariable("password") String password,
-                                                         @PathVariable("confirmPassword") String confirmPassword) {
-        userService.renewPassword(key, password, confirmPassword);
+    @PutMapping("/new/password")
+    public ResponseEntity<HttpResponse> resetPasswordWithKey(@RequestBody @Valid NewPasswordForm form) {
+        userService.updatePassword(form.getUserId(), form.getPassword(), form.getConfirmPassword());
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())

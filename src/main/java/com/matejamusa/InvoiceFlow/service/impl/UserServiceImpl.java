@@ -49,11 +49,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void renewPassword(String key, String password, String confirmPassword) {
-        userRepository.renewPassword(key, password, confirmPassword);
-    }
-
-    @Override
     public UserDTO verifyAccountKey(String key) {
         return mapToUserDTO(userRepository.verifyAccountKey(key));
     }
@@ -71,6 +66,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public void updatePassword(Long userId, String currentPassword, String newPassword, String confirmNewPassword) {
         userRepository.updatePassword(userId, currentPassword, newPassword, confirmNewPassword);
+    }
+
+    @Override
+    public void updatePassword(Long userId, String password, String confirmPassword) {
+        userRepository.updatePassword(userId, password, confirmPassword);
     }
 
     @Override

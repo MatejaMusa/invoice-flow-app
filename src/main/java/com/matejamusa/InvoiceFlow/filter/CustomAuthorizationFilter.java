@@ -28,7 +28,7 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 @Slf4j
 public class CustomAuthorizationFilter extends OncePerRequestFilter {
     private static final String TOKEN_PREFIX = "Bearer ";
-    private static final String[] PUBLIC_ROUTES = {"user/login","/user/verify/code", "/user/register","/user/refresh/token","/user/image"};
+    private static final String[] PUBLIC_ROUTES = {"/user/new/password", "user/login","/user/verify/code", "/user/register","/user/refresh/token","/user/image"};
     private final TokenProvider tokenProvider;
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {

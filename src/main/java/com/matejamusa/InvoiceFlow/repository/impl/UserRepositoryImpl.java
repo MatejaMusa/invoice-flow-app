@@ -231,11 +231,11 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
     }
 
     @Override
-    public void renewPassword(String key, String password, String confirmPassword) {
+    public void updatePassword(Long userId, String password, String confirmPassword) {
         if(!password.equals(confirmPassword)) throw new ApiException("Passwords do not match");
         try {
-            jdbc.update(UPDATE_USER_PASSWORD_BY_URL_QUERY, Map.of("password", encoder.encode(password), "url", getVerificationUrl(key,PASSWORD.getType())));
-            jdbc.update(DELETE_VERIFICATION_BY_URL_QUERY, Map.of("url", getVerificationUrl(key,PASSWORD.getType())));
+            jdbc.update(UPDATE_USER_PASSWORD_BY_USER_ID_QUERY, Map.of("id",userId, "password", encoder.encode(password)));
+            //jdbc.update(DELETE_PASSWORD_VERIFICATION_BY_USER_ID_QUERY, Map.of("userId", userId));
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ApiException("An error occurred. Please try again.");
