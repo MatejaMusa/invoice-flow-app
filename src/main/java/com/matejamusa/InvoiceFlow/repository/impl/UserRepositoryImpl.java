@@ -9,6 +9,7 @@ import com.matejamusa.InvoiceFlow.model.User;
 import com.matejamusa.InvoiceFlow.model.UserPrincipal;
 import com.matejamusa.InvoiceFlow.repository.RoleRepository;
 import com.matejamusa.InvoiceFlow.rowmapper.UserRowMapper;
+import com.matejamusa.InvoiceFlow.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
@@ -36,6 +37,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static com.matejamusa.InvoiceFlow.enumeration.RoleType.ROLE_USER;
 import static com.matejamusa.InvoiceFlow.enumeration.VerificationType.ACCOUNT;
@@ -59,6 +61,7 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
     private final RoleRepository<Role> roleRepository;
     private final BCryptPasswordEncoder encoder;
     private final SnsClient snsClient;
+    private final EmailService emailService;
 
     @Override
     public User create(User user) {
@@ -71,7 +74,7 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             roleRepository.addRoleToUser(user.getId(), ROLE_USER.name());
             String verificationUrl = getVerificationUrl(UUID.randomUUID().toString(), ACCOUNT.getType());
             jdbc.update(INSERT_ACCOUNT_VERIFICATION_URL_QUERY, Map.of("userId",user.getId(), "url", verificationUrl));
-//            emailService.sendVerificationUrl(user.getFirstName(),user.getEmail(), verificationUrl, ACCOUNT);
+//            sendEmail(user.getFirstName(),user.getEmail(), verificationUrl, ACCOUNT);
             user.setEnabled(false);
             user.setNotLocked(true);
             return user;
@@ -79,6 +82,19 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             log.error(exception.getMessage());
             throw new ApiException("An error occurred. Please try again.");
         }
+    }
+
+    private void sendEmail(String firstName, String email, String verificationUrl, VerificationType verificationType) {
+        CompletableFuture.runAsync(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    emailService.sendVerificationEmail(firstName,email, verificationUrl, verificationType);
+                } catch (Exception e) {
+                    throw new ApiException("Unable to send email");
+                }
+            }
+        });
     }
 
     @Override
@@ -171,7 +187,7 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
         try {
             jdbc.update(DELETE_VERIFICATION_CODE_BY_USER_ID_QUERY, Map.of("id",user.getId()));
             jdbc.update(INSERT_VERIFICATION_CODE_QUERY, Map.of("userId",user.getId(), "code", verificationCode, "expirationDate", expirationDate));
-//            sendSMS(snsClient, "From: InvoiceFlow \nVerification code\n"+ verificationCode, user.getPhone());
+            sendSMS(snsClient, "From: InvoiceFlow \nVerification code\n"+ verificationCode, user.getPhone());
             log.info("Verification code: {}", verificationCode);
         } catch (Exception exception) {
             log.error(exception.getMessage());
@@ -209,6 +225,7 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
            String verificationUrl = getVerificationUrl(UUID.randomUUID().toString(), PASSWORD.getType());
            jdbc.update(DELETE_PASSWORD_VERIFICATION_BY_USER_ID_QUERY, Map.of("userId", user.getId()));
            jdbc.update(INSERT_PASSWORD_VERIFICATION_QUERY, Map.of("userId", user.getId(), "url", verificationUrl, "expirationDate", expirationDate));
+           sendEmail(user.getFirstName(), email, verificationUrl, PASSWORD);
            log.info("Verification URL: {}", verificationUrl);
         } catch (Exception e) {
             throw new ApiException("An error occurred. Please try again.");
