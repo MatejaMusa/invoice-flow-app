@@ -21,7 +21,7 @@ public class UpdateForm {
     @NotEmpty(message = "Email cannot be empty")
     @Email(message = "Invalid email. Please enter valid email address")
     private String email;
-    @Pattern(regexp = "^\\d{10}$", message = "Invalid phone number")
+    @Pattern(regexp = "^\\+\\d{12}$", message = "Invalid phone number, please use country code")
     private String phone;
     private String address;
     private String title;

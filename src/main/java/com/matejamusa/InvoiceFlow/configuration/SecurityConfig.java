@@ -1,5 +1,6 @@
 package com.matejamusa.InvoiceFlow.configuration;
 
+import com.matejamusa.InvoiceFlow.constant.Constants;
 import com.matejamusa.InvoiceFlow.filter.CustomAuthorizationFilter;
 import com.matejamusa.InvoiceFlow.handler.CustomAccessDeniedHandler;
 import com.matejamusa.InvoiceFlow.handler.CustomAuthenticationEntryPoint;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -24,9 +26,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 @EnableMethodSecurity
 public class SecurityConfig {
-    private static final String[] PUBLIC_URLS = {"/user/refresh/token/**","/user/verify/account/**",
-            "/user/verify/password/**","/user/login/**","/user/register/**",
-            "/user/verify/**","/user/resetpassword/**","/user/image/**", "/user/new/password/**"};
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final BCryptPasswordEncoder encoder;
@@ -35,13 +34,13 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
-        http.csrf().disable().cors();
-        http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-        http.authorizeHttpRequests().requestMatchers(PUBLIC_URLS).permitAll();
-        http.authorizeHttpRequests().requestMatchers(HttpMethod.DELETE, "/user/delete/**").hasAnyAuthority("DELETE:USER");
-        http.authorizeHttpRequests().requestMatchers(HttpMethod.DELETE, "/customer/delete/**").hasAnyAuthority("DELETE:CUSTOMER");
-        http.exceptionHandling().accessDeniedHandler(customAccessDeniedHandler).authenticationEntryPoint(customAuthenticationEntryPoint);
-        http.authorizeHttpRequests().anyRequest().authenticated();
+        http.csrf(csrf -> csrf.disable()).cors(Customizer.withDefaults());
+        http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        http.authorizeHttpRequests(request -> request.requestMatchers(Constants.PUBLIC_URLS).permitAll());
+        http.authorizeHttpRequests(request -> request.requestMatchers(HttpMethod.DELETE, "/user/delete/**").hasAnyAuthority("DELETE:USER"));
+        http.authorizeHttpRequests(request -> request.requestMatchers(HttpMethod.DELETE, "/customer/delete/**").hasAnyAuthority("DELETE:CUSTOMER"));
+        http.exceptionHandling(exception -> exception.accessDeniedHandler(customAccessDeniedHandler).authenticationEntryPoint(customAuthenticationEntryPoint));
+        http.authorizeHttpRequests(request -> request.anyRequest().authenticated());
         http.addFilterBefore(customAuthorizationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

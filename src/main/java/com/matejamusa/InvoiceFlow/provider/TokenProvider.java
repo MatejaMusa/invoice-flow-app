@@ -6,14 +6,13 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.InvalidClaimException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
+import com.matejamusa.InvoiceFlow.constant.Constants;
 import com.matejamusa.InvoiceFlow.model.UserPrincipal;
 import com.matejamusa.InvoiceFlow.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.config.core.GrantedAuthorityDefaults;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -31,28 +30,23 @@ import static java.util.stream.Collectors.toList;
 @Component
 @RequiredArgsConstructor
 public class TokenProvider {
-    private static final String INVOICE_FLOW_DOO = "INVOICE_FLOW_DOO";
-    private static final String CUSTOMER_MANAGEMENT_SERVICE = "CUSTOMER_MANAGEMENT_SERVICE";
-    private static final String AUTHORITIES = "authorities";
-    private static final long ACCESS_TOKEN_EXPIRATION_TIME = 1_800_000;
-    private static final long REFRESH_TOKEN_EXPIRATION_TIME = 432_000_000;
     @Value("${jwt.secret}")
     private String secret;
     private final UserService userService;
 
     public String createAccessToken(UserPrincipal userPrincipal) {
         String[] claims = getClaimsFromUser(userPrincipal);
-        return JWT.create().withIssuer(INVOICE_FLOW_DOO).withAudience(CUSTOMER_MANAGEMENT_SERVICE)
-                .withIssuedAt(new Date()).withSubject(String.valueOf(userPrincipal.getUser().getId())).withArrayClaim(AUTHORITIES, claims)
-                .withExpiresAt(new Date(currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
+        return JWT.create().withIssuer(Constants.INVOICE_FLOW_DOO).withAudience(Constants.CUSTOMER_MANAGEMENT_SERVICE)
+                .withIssuedAt(new Date()).withSubject(String.valueOf(userPrincipal.getUser().getId())).withArrayClaim(Constants.AUTHORITIES, claims)
+                .withExpiresAt(new Date(currentTimeMillis() + Constants.ACCESS_TOKEN_EXPIRATION_TIME))
                 .sign(Algorithm.HMAC512(secret.getBytes()));
     }
 
     public String createRefreshToken(UserPrincipal userPrincipal) {
         String[] claims = getClaimsFromUser(userPrincipal);
-        return JWT.create().withIssuer(INVOICE_FLOW_DOO).withAudience(CUSTOMER_MANAGEMENT_SERVICE)
+        return JWT.create().withIssuer(Constants.INVOICE_FLOW_DOO).withAudience(Constants.CUSTOMER_MANAGEMENT_SERVICE)
                 .withIssuedAt(new Date()).withSubject(String.valueOf(userPrincipal.getUser().getId()))
-                .withExpiresAt(new Date(currentTimeMillis() + REFRESH_TOKEN_EXPIRATION_TIME))
+                .withExpiresAt(new Date(currentTimeMillis() + Constants.REFRESH_TOKEN_EXPIRATION_TIME))
                 .sign(Algorithm.HMAC512(secret.getBytes()));
     }
 
@@ -96,14 +90,14 @@ public class TokenProvider {
     }
     private String[] getClaimsFromToken(String token) {
         JWTVerifier verifier = getJWTVerifier();
-        return verifier.verify(token).getClaim(AUTHORITIES).asArray(String.class);
+        return verifier.verify(token).getClaim(Constants.AUTHORITIES).asArray(String.class);
     }
 
     private JWTVerifier getJWTVerifier() {
         JWTVerifier verifier;
         try {
             Algorithm algorithm = Algorithm.HMAC512(secret);
-            verifier = JWT.require(algorithm).withIssuer(INVOICE_FLOW_DOO).build();
+            verifier = JWT.require(algorithm).withIssuer(Constants.INVOICE_FLOW_DOO).build();
         }catch (JWTVerificationException e) {throw new JWTVerificationException("Token cannot be verified");}
         return verifier;
     }

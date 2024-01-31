@@ -1,5 +1,6 @@
 package com.matejamusa.InvoiceFlow.repository.impl;
 
+import com.matejamusa.InvoiceFlow.constant.Constants;
 import com.matejamusa.InvoiceFlow.dto.UserDTO;
 import com.matejamusa.InvoiceFlow.enumeration.VerificationType;
 import com.matejamusa.InvoiceFlow.exception.ApiException;
@@ -12,7 +13,6 @@ import com.matejamusa.InvoiceFlow.rowmapper.UserRowMapper;
 import com.matejamusa.InvoiceFlow.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.time.DateFormatUtils;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -55,8 +55,6 @@ import static org.apache.commons.lang3.time.DateUtils.addDays;
 @RequiredArgsConstructor
 @Slf4j
 public class UserRepositoryImpl implements UserRepository<User>, UserDetailsService {
-
-    private static final String DATE_FORMAT = "yyyy-MM-dd hh:mm:ss";
     private final NamedParameterJdbcTemplate jdbc;
     private final RoleRepository<Role> roleRepository;
     private final BCryptPasswordEncoder encoder;
@@ -74,7 +72,7 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             roleRepository.addRoleToUser(user.getId(), ROLE_USER.name());
             String verificationUrl = getVerificationUrl(UUID.randomUUID().toString(), ACCOUNT.getType());
             jdbc.update(INSERT_ACCOUNT_VERIFICATION_URL_QUERY, Map.of("userId",user.getId(), "url", verificationUrl));
-//            sendEmail(user.getFirstName(),user.getEmail(), verificationUrl, ACCOUNT);
+            sendEmail(user.getFirstName(),user.getEmail(), verificationUrl, ACCOUNT);
             user.setEnabled(false);
             user.setNotLocked(true);
             return user;
@@ -182,7 +180,7 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
 
     @Override
     public void sendVerificationCode(UserDTO user) {
-        String expirationDate = format(addDays(new Date(),1),DATE_FORMAT);
+        String expirationDate = format(addDays(new Date(),1), Constants.DATE_FORMAT);
         String verificationCode = randomAlphabetic(8).toUpperCase();
         try {
             jdbc.update(DELETE_VERIFICATION_CODE_BY_USER_ID_QUERY, Map.of("id",user.getId()));
@@ -220,7 +218,7 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             throw new ApiException("There is no account with this email address.");
         }
         try {
-           String expirationDate = format(addDays(new Date(), 1), DATE_FORMAT);
+           String expirationDate = format(addDays(new Date(), 1), Constants.DATE_FORMAT);
            User user = getUserByEmail(email);
            String verificationUrl = getVerificationUrl(UUID.randomUUID().toString(), PASSWORD.getType());
            jdbc.update(DELETE_PASSWORD_VERIFICATION_BY_USER_ID_QUERY, Map.of("userId", user.getId()));

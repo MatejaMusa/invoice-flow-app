@@ -1,5 +1,6 @@
 package com.matejamusa.InvoiceFlow.controller;
 
+import com.matejamusa.InvoiceFlow.constant.Constants;
 import com.matejamusa.InvoiceFlow.enumeration.EventType;
 import com.matejamusa.InvoiceFlow.event.NewUserEvent;
 import com.matejamusa.InvoiceFlow.exception.ApiException;
@@ -45,7 +46,6 @@ import static org.springframework.security.authentication.UsernamePasswordAuthen
 @RequestMapping(path="/user")
 @RequiredArgsConstructor
 public class UserController {
-    private static final String TOKEN_PREFIX = "Bearer ";
     private final UserService userService;
     private final RoleService roleService;
     private final EventService eventService;
@@ -153,7 +153,7 @@ public class UserController {
     @GetMapping("/refresh/token")
     public ResponseEntity<HttpResponse> refreshToken(HttpServletRequest request) {
         if(isHeaderAndTokenValid(request)) {
-            String token = request.getHeader(AUTHORIZATION).substring(TOKEN_PREFIX.length());
+            String token = request.getHeader(AUTHORIZATION).substring(Constants.TOKEN_PREFIX.length());
             UserDTO user = userService.getUserById(tokenProvider.getSubject(token,request));
             return ResponseEntity.ok().body(
                     HttpResponse.builder()
@@ -177,10 +177,10 @@ public class UserController {
 
     private boolean isHeaderAndTokenValid(HttpServletRequest request) {
         return request.getHeader(AUTHORIZATION) != null
-                && request.getHeader(AUTHORIZATION).startsWith(TOKEN_PREFIX)
+                && request.getHeader(AUTHORIZATION).startsWith(Constants.TOKEN_PREFIX)
                 && tokenProvider.isTokenValid(
-                        tokenProvider.getSubject(request.getHeader(AUTHORIZATION).substring(TOKEN_PREFIX.length()),request),
-                        request.getHeader(AUTHORIZATION).substring(TOKEN_PREFIX.length())
+                        tokenProvider.getSubject(request.getHeader(AUTHORIZATION).substring(Constants.TOKEN_PREFIX.length()),request),
+                        request.getHeader(AUTHORIZATION).substring(Constants.TOKEN_PREFIX.length())
                 );
     }
 
@@ -318,8 +318,9 @@ public class UserController {
                         .build());
     }
     private UserDTO authenticate(String email, String password) {
+        UserDTO userByEmail = userService.getUserByEmail(email);
         try {
-            if(userService.getUserByEmail(email) != null) {
+            if(userByEmail != null) {
                 publisher.publishEvent(new NewUserEvent(email, EventType.LOGIN_ATTEMPT));
             }
             Authentication authentication = authenticationManager.authenticate(unauthenticated(email, password));
@@ -329,7 +330,9 @@ public class UserController {
             }
             return loggedInUser;
         } catch (Exception e) {
-            publisher.publishEvent(new NewUserEvent(email, EventType.LOGIN_ATTEMPT_FAILURE));
+            if(userByEmail != null) {
+                publisher.publishEvent(new NewUserEvent(email, EventType.LOGIN_ATTEMPT_FAILURE));
+            }
             processError(request, response, e);
             throw new ApiException(e.getMessage());
         }

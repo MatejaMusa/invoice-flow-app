@@ -1,5 +1,6 @@
 package com.matejamusa.InvoiceFlow.filter;
 
+import com.matejamusa.InvoiceFlow.constant.Constants;
 import com.matejamusa.InvoiceFlow.provider.TokenProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -15,7 +16,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import static com.matejamusa.InvoiceFlow.utils.ExceptionUtils.processError;
 import static java.util.Arrays.asList;
@@ -27,8 +27,6 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 @AllArgsConstructor
 @Slf4j
 public class CustomAuthorizationFilter extends OncePerRequestFilter {
-    private static final String TOKEN_PREFIX = "Bearer ";
-    private static final String[] PUBLIC_ROUTES = {"/user/new/password", "user/login","/user/verify/code", "/user/register","/user/refresh/token","/user/image"};
     private final TokenProvider tokenProvider;
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -51,8 +49,8 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        return request.getHeader(AUTHORIZATION) == null || !request.getHeader(AUTHORIZATION).startsWith(TOKEN_PREFIX)
-                || request.getMethod().equalsIgnoreCase("OPTIONS") || asList(PUBLIC_ROUTES).contains(request.getRequestURI());
+        return request.getHeader(AUTHORIZATION) == null || !request.getHeader(AUTHORIZATION).startsWith(Constants.TOKEN_PREFIX)
+                || request.getMethod().equalsIgnoreCase("OPTIONS") || asList(Constants.PUBLIC_ROUTES).contains(request.getRequestURI());
     }
     private Long getUserId(HttpServletRequest request) {
         return tokenProvider.getSubject(getToken(request), request);
@@ -60,8 +58,8 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
 
     private String getToken(HttpServletRequest request) {
         return ofNullable(request.getHeader(AUTHORIZATION))
-                .filter(header -> header.startsWith(TOKEN_PREFIX))
-                .map(header -> header.replace(TOKEN_PREFIX, EMPTY))
+                .filter(header -> header.startsWith(Constants.TOKEN_PREFIX))
+                .map(header -> header.replace(Constants.TOKEN_PREFIX, EMPTY))
                 .get();
     }
 }
