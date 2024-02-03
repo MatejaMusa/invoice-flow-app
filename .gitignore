@@ -13,6 +13,9 @@ target/
 .springBeans
 .sts4-cache
 .env
+.dev
+.prod
+.test
 .yml
 .properites
 
